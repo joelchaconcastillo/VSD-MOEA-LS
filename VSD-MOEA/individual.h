@@ -92,7 +92,7 @@ void CIndividual::obj_eval()
 void CIndividual::show_objective()
 {
     for(int n=0; n<nobj; n++)
-		printf("%f ",y_obj[n]);
+		printf("%.40f ",y_obj[n]);
 	printf("\n");
 }
 
@@ -116,11 +116,11 @@ bool CIndividual::operator<(const CIndividual &ind2) //weakly dominance
     for(int n=0; n<nobj; n++)
 	{
 		if(ind2.y_obj[n]<y_obj[n]) return false;
+		//if(ind2.y_obj[n]<y_obj[n]- 0.0001) return false;
 	}
-//	if(ind2.y_obj==y_obj) return false;
+	if(ind2.y_obj==y_obj) return false;
 	return dominated;
 }
-
 
 bool CIndividual::operator<<(const CIndividual &ind2) //strong dominanace
 {
@@ -128,7 +128,7 @@ bool CIndividual::operator<<(const CIndividual &ind2) //strong dominanace
 	bool dominated = true;
     for(int n=0; n<nobj; n++)
 	{
-		if(ind2.y_obj[n]<y_obj[n]) return false;
+		if(ind2.y_obj[n]<=y_obj[n]) return false;
 	}
 	if(ind2.y_obj==y_obj) return false;
 	return dominated;
