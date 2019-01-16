@@ -166,23 +166,79 @@ void MOEA::evol_population()
 	update_archive(archive, population, child_pop);
 	
         //improvement of the child....
-//	improvement(child_pop);
+	improvement(child_pop);
 }
 
 void MOEA::improvement(vector<CIndividual> &old_individuals)
 {
    for(int i = 0 ; i < old_individuals.size(); i++)
       {
-	CIndividual newindividual = old_individuals[i];	
-	LocalSearch1(newindividual);	
-	LocalSearch2(newindividual);	
-	LocalSearch3(newindividual);	
+	//CIndividual newindividual = old_individuals[i];	
+	LocalSearch1(old_individuals[i]);	
+	//LocalSearch2(newindividual);	
+	//LocalSearch3(newindividual);	
       }	
 }
 
-void MOEA::LocalSearch1(CIndividual &old_individual)
+void MOEA::LocalSearch1(CIndividual &newindividual)
 {
-
+	CIndividual old_individual = newindividual;
+	vector<double> SearchRange(nvar);
+	vector<int> Direction(nvar);	
+	for(int i = 0; i < nvar; i++)
+	{
+	   SearchRange[i] = (vuppBound[i]-vlowBound[i])/2.0;
+	}
+	bool localoptima = false;
+	int pass = 0;
+	while(!localoptima)
+	{
+	   pass++;
+//	   localoptima = false;
+	   bool expand = true;
+	   for(int i = 0; i < nvar; i++)  //check all variables..
+	   {
+		SearchRange[i] *=0.5;
+	//	cout << newindividual.x_var[i]<<endl;
+	      if(SearchRange[i] > 1e-8) //expand again if all search range variables are lower than 1e-8, note that some variables could be zero and could be keep in this way..
+	      {
+		  expand = false;
+		  break;
+	      }
+		Direction[i] = (rnd_uni(&rnd_uni_init) < 0.5)?-1:1; //similar than a bernulli distrbutions, which is dedicated for the direcction..
+	   }
+	   if( expand )
+	   {
+	      for(int i = 0; i < nvar; i++)  
+	      {
+	            SearchRange[i] = (vuppBound[i]-vlowBound[i])*0.4;
+	      }
+	   }
+	   for(int i = 0; i < nvar; i++)
+	   {
+		newindividual.x_var[i] = old_individual.x_var[i] + SearchRange[i]*Direction[i];
+		newindividual.x_var[i] = max(vlowBound[i], newindividual.x_var[i]);
+		newindividual.x_var[i] = min(vuppBound[i], newindividual.x_var[i]);
+	        newindividual.obj_eval();
+	        nfes++;
+	        if( old_individual < newindividual) //weakly dominance
+	        {
+		   newindividual.x_var[i] = old_individual.x_var[i];
+	           newindividual.x_var[i] = old_individual.x_var[i] - 0.5*SearchRange[i]*Direction[i];
+	           newindividual.x_var[i] = max(vlowBound[i], newindividual.x_var[i]);
+	           newindividual.x_var[i] = min(vuppBound[i], newindividual.x_var[i]);
+	           newindividual.obj_eval();
+	           nfes++;
+	           if( old_individual < newindividual)
+	           {
+	             newindividual = old_individual;
+	             localoptima = true; //there are not improvements, thus it is a local optima!
+	           }
+	         }
+	   }
+	}
+//	if(pass>1)exit(0);
+	  cout << pass<< " ";
 }
 void MOEA::LocalSearch2(CIndividual &old_individual)
 {
@@ -270,9 +326,9 @@ void MOEA::fast_non_dominated_sorting(vector <CIndividual*> &survivors)
 	   for(int j = 0; j < survivors.size(); j++)
 	  {
 		if(i==j) continue;
-	       if( *(survivors[i]) < *(survivors[j]))
+	       if( *(survivors[i]) << *(survivors[j]))
 	   	    dominate_list[i].push_back(j);
-		else if (*(survivors[j]) < *(survivors[i]))
+		else if (*(survivors[j]) << *(survivors[i]))
 		   dominated_count[i]++;
  	  }
 	if(dominated_count[i] == 0 ) currentfront.push_back(i);// get the first front
@@ -372,11 +428,11 @@ void MOEA::computing_dominate_information(vector <CIndividual*> &pool)
 	for(int j = 0; j < pool.size(); j++)
 	{
 	    if(i == j) continue;
-	    if( *(pool[i]) < *(pool[j]) ) //the check if pop[i] dominates pop[j], tht '<' is overloaded
+	    if( *(pool[i]) << *(pool[j]) ) //the check if pop[i] dominates pop[j], tht '<' is overloaded
 	    {
 		pool[i]->ptr_dominate.push_back(pool[j]);
 	    }
-	    else if( *(pool[j]) < *(pool[i]) )
+	    else if( *(pool[j]) << *(pool[i]) )
 	   {
 		pool[i]->times_dominated++;	
 	   }
@@ -531,7 +587,7 @@ void MOEA::exec_emo(int run)
 	{
 		evol_population();
 		nfes += pops;
-	    if( !(nfes % (max_nfes/10)  ))
+//	    if( !(nfes % (max_nfes/10)  ))
 	    {
 	      cout << "nfes... "<< nfes <<endl;
               save_front(filename2); //save the objective space information
