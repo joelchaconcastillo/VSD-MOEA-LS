@@ -167,7 +167,7 @@ void MOEA::evol_population()
 	update_archive(archive, population, child_pop);
 	
         //improvement of the child....
-	improvement(child_pop);
+	//improvement(child_pop);
 	//improvement(archive);
 }
 
@@ -665,7 +665,10 @@ void MOEA::computing_dominate_information(vector <CIndividual*> &pool)
 void MOEA::update_diversity_factor()
 {
 	double ratio = ((double) nfes)/max_nfes;
-	lowestDistanceFactor = Initial_lowest_distance_factor - Initial_lowest_distance_factor*(ratio/0.9);
+//	lowestDistanceFactor = Initial_lowest_distance_factor - Initial_lowest_distance_factor*(ratio/0.9);
+	double frequency = 100;
+        lowestDistanceFactor = Initial_lowest_distance_factor*( 0.5- 0.5*cos(M_PI*cos( frequency*(ratio)*M_PI )*(1.0-ratio)));
+
 }
 void MOEA::reproduction(vector<CIndividual> &population, vector<CIndividual> &child_pop)
 {
@@ -812,6 +815,7 @@ void MOEA::exec_emo(int run)
 //	    if( !(nfes % (max_nfes/10)  ))
 	    {
 	      cout << "nfes... "<< nfes <<endl;
+		cout << lowestDistanceFactor <<endl;
               save_front(filename2); //save the objective space information
 	    }
 	}
