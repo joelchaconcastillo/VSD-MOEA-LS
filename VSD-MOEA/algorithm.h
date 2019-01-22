@@ -356,7 +356,7 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
       {
 	SearchU[i] = vuppBound[i];
 	SearchL[i] = vlowBound[i];
-	Disp[i] = (SearchU[i] - SearchL[i])/10.0;
+	Disp[i] = (SearchU[i] - SearchL[i])/100.0;
       }
 	vector<int> order(nvar);
 	for(int i = 0; i < order.size(); i++) order[i] = i;
@@ -665,9 +665,9 @@ void MOEA::computing_dominate_information(vector <CIndividual*> &pool)
 void MOEA::update_diversity_factor()
 {
 	double ratio = ((double) nfes)/max_nfes;
-//	lowestDistanceFactor = Initial_lowest_distance_factor - Initial_lowest_distance_factor*(ratio/0.9);
-	double frequency = 100;
-        lowestDistanceFactor = Initial_lowest_distance_factor*( 0.5- 0.5*cos(M_PI*cos( frequency*(ratio)*M_PI )*(1.0-ratio)));
+	lowestDistanceFactor = Initial_lowest_distance_factor - Initial_lowest_distance_factor*(ratio/0.9);
+//	double frequency = 100;
+//        lowestDistanceFactor = Initial_lowest_distance_factor*( 0.5- 0.5*cos(M_PI*cos( frequency*(ratio)*M_PI )*(1.0-ratio)));
 
 }
 void MOEA::reproduction(vector<CIndividual> &population, vector<CIndividual> &child_pop)
