@@ -109,9 +109,8 @@ void SetConfiguration(int argc, char*argv[])
 			exit(0);
 		}
 	    }
-	 Initial_lowest_distance_factor *= sqrt(nvar);
-        if( realm == -1) realm = 1.0/nvar;
-
+	if( realm == -1) realm = 1.0/nvar;
+	Initial_lowest_distance_factor *=sqrt(nvar);
 }
 int main(int argc, char *argv[])
 {

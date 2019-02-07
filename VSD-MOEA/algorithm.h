@@ -43,10 +43,12 @@ public:
         void select_first_survivors(vector<CIndividual*> &survivors, vector<CIndividual*> &candidates);
         void update_domianted_information(vector<CIndividual*> &survivors, vector<CIndividual*> &current);
         void update_population(vector<CIndividual*> &survivors, vector<CIndividual> &population);
-	void update_archive(vector<CIndividual> &archive, vector<CIndividual> &population);
+	void update_ideal_vector(CIndividual &ind);
 
 	void fast_non_dominated_sorting(vector <CIndividual*> &survivors);
+	void update_archive(vector<CIndividual> &archive, vector<CIndividual> &population);
 	void update_archive(vector<CIndividual> &archive, vector<CIndividual> &population, vector<CIndividual> &child_pop);
+	void sophisticated_Local_Search(vector<CIndividual> child_pop);
 	void LocalSearch1(CIndividual &old_individual);
 	void LocalSearch2(CIndividual &old_individual);
 	void LocalSearch3(CIndividual &old_individual);
@@ -55,14 +57,14 @@ public:
 
 	double distance_improvement( vector<double> &a, vector<double> &b);
 	vector <CIndividual> population;
-	vector<CIndividual> child_pop;	
-	vector<CIndividual> archive;	
+	vector<CIndividual> child_pop;
+	vector<CIndividual> archive;
 	void operator=(const MOEA &moea);
 
 public:
 //
 //	// algorithm parameters
-	int nfes;
+	long long int nfes;
 //	int     nfes, max_nfes;          //  the number of function evluations
 
 };
@@ -92,9 +94,10 @@ double MOEA::distance_improvement( vector<double> &a, vector<double> &b)
 	double maxd = -INFINITY;
    for(int i = 0; i < a.size(); i++)
 	{
-	   double factor = max(0.0,a[i]-b[i]);
+
+	   double factor = max(0.0, a[i]-b[i]);
 	   dist += factor*factor;
-	   maxd = max(maxd, max(b[i]-a[i],0.0));
+	   maxd = max(maxd, max( b[i]-a[i], 0.0));
 	}
         if(dist == 0.0) return -maxd; //in case that this indicator is zero, this mean that it is a dominated individual...
    return dist;
@@ -102,25 +105,33 @@ double MOEA::distance_improvement( vector<double> &a, vector<double> &b)
 }
 void MOEA::init_population()
 {
-
+	
     for(int i=0; i<pops; i++)
 	{
 		CIndividual indiv1, indiv2, indiv3;
 		// Randomize and evaluate solution
 		indiv1.rnd_init();
 		indiv1.obj_eval();
+
+		update_ideal_vector(indiv1);
 		// Save in the population
 		population.push_back(indiv1);
 
+
 		indiv2.rnd_init();
 		indiv2.obj_eval();
+
+		update_ideal_vector(indiv2);
 
 		child_pop.push_back(indiv2);
 
 		indiv3.rnd_init();
 		indiv3.obj_eval();
 
+		update_ideal_vector(indiv3);
+
 		archive.push_back(indiv3);
+
 		nfes+=3;
 	}
 }
@@ -160,17 +171,28 @@ void MOEA::evol_population()
 	}
 	fast_non_dominated_sorting(survivors);//rank the survivors individuals..
 
-	//this procedure is necessary since the penalized individuals
+	//this procedure is necesary since the penalized individuals are used with memmory addres
 	update_population(survivors, population); //update the parent population 
-	
+
 	reproduction(population, child_pop); //generate a new population considering the survivors individuals...
+	improvement(child_pop);
+
+	//sophisticated_Local_Search(child_pop);
+
+
 	update_archive(archive, population, child_pop);
-	
-        //improvement of the child....
-	//improvement(child_pop);
-	//improvement(archive);
 }
 
+
+void MOEA::sophisticated_Local_Search(vector<CIndividual> child_pop)
+{
+   //Apply initial local search to all the individuals...
+//   for(int i = 0 ; i < child_improved.size(); i++) 
+//   {
+//     global_test(child_improved[i]);//asumption of D x 100 = 3000 nfes
+//     step_binary_local_search();
+//   }
+}
 void MOEA::improvement(vector<CIndividual> child_improved) //note: is a copy of child_pop
 {
 //   for(int i = 0 ; i < child_improved.size(); i++)
@@ -184,6 +206,7 @@ void MOEA::improvement(vector<CIndividual> child_improved) //note: is a copy of 
 //	LocalSearch3(child_improved[rand()%child_improved.size()]);	
       }	
 	update_archive(archive, child_improved);
+      
 }
 
 void MOEA::LocalSearch1(CIndividual &newindividual)
@@ -196,6 +219,8 @@ void MOEA::LocalSearch1(CIndividual &newindividual)
 	   SearchRange[i] = (vuppBound[i]-vlowBound[i])/2.0;
 	   order[i] = i;
 	}
+
+	   next_permutation(order.begin(), order.end());
 	  bool improve = false;
 	  bool LocalOptima = false;
 	int k=0;
@@ -224,7 +249,7 @@ void MOEA::LocalSearch1(CIndividual &newindividual)
 	   }
 	  }
 	  improve = false;
-	   next_permutation(order.begin(), order.end());
+	   //next_permutation(order.begin(), order.end());
 	   //random_shuffle(order.begin(), order.end());
 	   for(int d = 0; d < nvar; d++)
 	   {
@@ -356,7 +381,7 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
       {
 	SearchU[i] = vuppBound[i];
 	SearchL[i] = vlowBound[i];
-	Disp[i] = (SearchU[i] - SearchL[i])/100.0;
+	Disp[i] = (SearchU[i] - SearchL[i])/10.0;
       }
 	vector<int> order(nvar);
 	for(int i = 0; i < order.size(); i++) order[i] = i;
@@ -573,6 +598,10 @@ void MOEA::fast_non_dominated_sorting(vector <CIndividual*> &survivors)
 	currentfront = nextFront;
    }
 }
+void MOEA::update_ideal_vector(CIndividual &ind)
+{
+   for(int m = 0; m < nobj; m++) ideal[m] = min(ideal[m], ind.y_obj[m]);
+}
 void MOEA::update_population(vector<CIndividual*> &survivors, vector<CIndividual> &population)
 {
 	vector<CIndividual> pool;
@@ -581,7 +610,10 @@ void MOEA::update_population(vector<CIndividual*> &survivors, vector<CIndividual
 }
 void MOEA::update_domianted_information(vector<CIndividual*> &survivors, vector<CIndividual*> &candidates)
 {
+
      bool firstfrontcurrent = false; 
+//   while( !firstfrontcurrent)
+   {
      for(int i = 0; i < candidates.size(); i++) if(candidates[i]->times_dominated==0) firstfrontcurrent = true; //check if there exists at least one candidate in the lowest current front
      
      if( !firstfrontcurrent) //this indicates that there is not able a current in the lowest front, so the next front is to be considered
@@ -598,47 +630,105 @@ void MOEA::update_domianted_information(vector<CIndividual*> &survivors, vector<
 		  	   survivors[i]->times_dominated--;
 		}
 	   }
+	   firstfrontcurrent = false;
 	}
+    }
 }
 void MOEA::select_first_survivors(vector<CIndividual*> &survivors, vector<CIndividual*> &candidates)
 {
-	vector<int> BestIndex;
+////////////////##1
+	//first compute the nadir point ideal vector...
+///        for(int m = 0; m < nobj; m++)
+/// 	{	
+///	   nadir[m] = -DBL_MAX;
+///	   for(int i = 0; i < candidates.size(); i++)
+///	   {
+///		nadir[m] = max(nadir[m], candidates[i]->y_obj[m]);
+///	   }
+///	}
+///        vector<vector< double > > artifitial_vectors(nobj, vector<double>(nobj));
+///        for(int m = 0; m < nobj; m++)
+///	{
+///           for(int m1 = 0; m1 < nobj; m1++)
+///	      artifitial_vectors[m][m1] = nadir[m1];
+///	      artifitial_vectors[m][m] = ideal[m];
+///	}
+//	for(int m = 0 ; m < nobj; m++)
+//	{
+//		int indxmaxim = 0 ;
+//		double bestvector = INFINITY;
+//		for(int i = 0; i <  candidates.size(); i++)
+//		 {	
+//			double maxv = candidates[i]->y_obj[m];// distance_improvement(artifitial_vectors[m], candidates[i]->y_obj);
+//		        if(bestvector > maxv )
+//		        { indxmaxim = i; bestvector = maxv;}
+//		 }
+//		survivors.push_back( candidates[indxmaxim]);
+//		iter_swap(candidates.begin()+indxmaxim, candidates.end()-1);
+//		candidates.pop_back();
+//	}
+//return;
+//////////////////##2
+////
+//	vector<bool> grid(candidates.size(), false);
+//	for(int m = 0 ; m < nobj; m++)
+//	{
+//		int indxmaxim = -1 ;
+//		double bestvector = -INFINITY;
+//		for(int i = 0; i <  candidates.size(); i++)
+//		 {	
+//			if(grid[i]) continue;
+//			double maxv = 0.0;
+//			for(int j = 0; j < candidates.size(); j++)
+//			{
+//			   if( i==j ) continue;
+//			   maxv += distance_improvement(candidates[j]->y_obj, candidates[i]->y_obj);
+//			}
+//			
+//		        if(bestvector < maxv )
+//		        { indxmaxim = i; bestvector = maxv;}
+//		 }
+//		if(indxmaxim==-1)break;
+//		survivors.push_back(candidates[indxmaxim]);
+//		iter_swap(candidates.begin()+indxmaxim, candidates.end()-1);
+//		candidates.pop_back();
+//		iter_swap(grid.begin()+indxmaxim, grid.end()-1);
+//		grid.pop_back();
+//		for(int i = 0; i <  candidates.size(); i++)
+//		{
+//		   if(grid[i])continue;
+//		   if( (*candidates[indxmaxim]) < (*candidates[i]) ) grid[i]=true;
+//		}
+//	
+//
+//	
+//	}
+////////////////##3
 	///Select the best improvement distance candidates....
-	vector<bool> grid(candidates.size(), false);
 	for(int m = 0; m < nobj; m++)
 	{
-		int indxmaxim;
-		double bestvector = INFINITY;
+		int indxmaxim = 0 ;
+		double bestvector = DBL_MAX;
 		for(int i = 0; i <  candidates.size(); i++)
 		 {	
-			 if(candidates[i]->times_dominated != 0) continue; //just consider the first front
-		 	  if(grid[i])continue;
+			// if(candidates[i]->times_dominated != 0) continue; //just consider the first front
 		        double s = 0.0;	
-		        double maxv = -INFINITY;
+		        double maxv = -DBL_MAX;
 		        for(int k = 0; k < nobj; k++)
 		        {
 		      	   double fi = fabs(candidates[i]->y_obj[k]);
 		      	   s += fi;
 		      	   double ti = (k==m)?fi:1e5*fi;
-			    if(ti > maxv)   maxv=ti;
+		            if(ti > maxv)   maxv=ti;
 		        }
 		         maxv = maxv + 0.0001*s;
 		        if(bestvector > maxv)
 		        { indxmaxim = i; bestvector = maxv;}
 		  }
-		grid[indxmaxim] = true;
-		BestIndex.push_back(indxmaxim);
+		survivors.push_back( candidates[indxmaxim]);
+		iter_swap(candidates.begin()+indxmaxim, candidates.end()-1);
+		candidates.pop_back();
 	}
-	
-		sort(BestIndex.begin(), BestIndex.end()); //sort the indexes and remove from candidates
-
-		for(int i = BestIndex.size()-1; i >= 0 ; i--)
-		{
-			int index = BestIndex[i];
-			survivors.push_back( candidates[index]);
-			iter_swap(candidates.begin()+index, candidates.end()-1);
-			candidates.pop_back();
-		}
 }
 //get the rank of each individual...
 void MOEA::computing_dominate_information(vector <CIndividual*> &pool)
@@ -666,9 +756,6 @@ void MOEA::update_diversity_factor()
 {
 	double ratio = ((double) nfes)/max_nfes;
 	lowestDistanceFactor = Initial_lowest_distance_factor - Initial_lowest_distance_factor*(ratio/0.9);
-//	double frequency = 100;
-//        lowestDistanceFactor = Initial_lowest_distance_factor*( 0.5- 0.5*cos(M_PI*cos( frequency*(ratio)*M_PI )*(1.0-ratio)));
-
 }
 void MOEA::reproduction(vector<CIndividual> &population, vector<CIndividual> &child_pop)
 {
@@ -683,13 +770,15 @@ void MOEA::recombination(vector<CIndividual> &child_pop)
 	
    for(int i = 0; i < child_pop.size(); i+=2)
     {
-       int indexa = int(rnd_uni(&rnd_uni_init)*pops);
-       int indexb = int(rnd_uni(&rnd_uni_init)*pops);	
+       int indexa = i;// int(rnd_uni(&rnd_uni_init)*pops);
+       int indexb = i+1;//int(rnd_uni(&rnd_uni_init)*pops);	
        real_sbx_xoverA( child_pop2[indexa], child_pop2[indexb], child_pop[i], child_pop[i+1]);//the crossover probability and index distribution eta are configured in the global.h file
        realmutation(child_pop[i]); //the index distribution (eta) and  mutation probability are configured in the global.h file
        realmutation(child_pop[i+1]);
        child_pop[i].obj_eval();
        child_pop[i+1].obj_eval();
+       update_ideal_vector(child_pop[i]);
+       update_ideal_vector(child_pop[i+1]);
     }
 }
 void MOEA::binary_tournament_selection(vector<CIndividual > &population, vector<CIndividual> &child_pop)
@@ -806,17 +895,26 @@ void MOEA::exec_emo(int run)
 	nfes      = 0;
 	init_population(); //Initialize individuals...
 
-	sprintf(filename1,"%s/POS/POS_MOEAD_%s_RUN%d_seed_%d_nobj_%d.dat_bounded",currentPATH, strTestInstance,run, seed, nobj);
-	sprintf(filename2,"%s/POF/POF_MOEAD_%s_RUN%d_seed_%d_nobj_%d.dat_bounded",currentPATH, strTestInstance,run, seed, nobj);
+	sprintf(filename1,"%s/POS/POS_VSD-MOEA_%s_RUN_%d_seed_%d_nvar_%d_nobj_%d.dat_bounded_Di_%lf_nfes_%lld",currentPATH, strTestInstance,run, seed, nvar, nobj, Initial_lowest_distance_factor/sqrt(nvar), max_nfes);
+	sprintf(filename2,"%s/POF/POF_VSD-MOEA_%s_RUN_%d_seed_%d_nvar_%d_nobj_%d.dat_bounded_Di_%lf_nfes_%lld",currentPATH, strTestInstance,run, seed, nvar, nobj, Initial_lowest_distance_factor/sqrt(nvar), max_nfes);
+	save_front(filename2); //save the objective space information
+	save_pos(filename1); //save the decision variable space information
+        long long nfes1 = nfes, nfes2 = nfes;
+        long long countnfes=0;
 	while(nfes < max_nfes )
 	{
+	   nfes1=nfes;
 		evol_population();
 		nfes += pops;
-//	    if( !(nfes % (max_nfes/10)  ))
-	    {
-	      cout << "nfes... "<< nfes <<endl;
-		cout << lowestDistanceFactor <<endl;
+	    
+	    nfes2 = nfes;
+	   countnfes += (nfes2 - nfes1);
+	   if(  countnfes > 0.1*max_nfes  )
+	    {	
+	      countnfes -= 0.1*max_nfes;
               save_front(filename2); //save the objective space information
+	      save_pos(filename1); //save the decision variable space information
+	      cout << "nfes... "<< nfes <<endl;
 	    }
 	}
 	save_pos(filename1); //save the decision variable space information
@@ -833,9 +931,9 @@ void MOEA::save_front(char saveFilename[1024])
 	{
 		for(int k=0;k<nobj;k++)
 			fout<<archive[n].y_obj[k]<<"  ";
-	for(int k=0;k<nobj;k++)
+		for(int k=0;k<nobj;k++)
 			fout<<child_pop[n].y_obj[k]<<"  ";
-	for(int k=0;k<nobj;k++)
+		for(int k=0;k<nobj;k++)
 			fout<<population[n].y_obj[k]<<"  ";
 		fout<<"\n";
 	}
