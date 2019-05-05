@@ -12,7 +12,7 @@ public:
 	vector <double> x_var;
 	vector <double> y_obj;
 	vector <CIndividual *> ptr_dominate;
-	int    rank;
+	int    rank, count_age;
 	double nearest_variable_distance;
 	double neares_objective_distance;
 	double times_dominated;
@@ -108,10 +108,21 @@ void CIndividual::operator=(const CIndividual &ind2)
 	x_var = ind2.x_var;
 	y_obj = ind2.y_obj;
 	rank  = ind2.rank;
+	count_age = ind2.count_age;
 }
 
 bool CIndividual::operator<(const CIndividual &ind2)
 {
+
+bool  similar = true;
+    for(int n=0; n<nobj; n++)
+	{
+		if(ind2.y_obj[n]<y_obj[n]) return false;
+	        if(fabs(ind2.y_obj[n]-y_obj[n])>1e-3) similar=false;
+	}
+	if(similar) return false;
+	return true;
+
 	bool dominated = true;
     for(int n=0; n<nobj; n++)
 	{
@@ -119,6 +130,8 @@ bool CIndividual::operator<(const CIndividual &ind2)
 	}
 	if(ind2.y_obj==y_obj) return false;
 	return dominated;
+
+
 }
 
 

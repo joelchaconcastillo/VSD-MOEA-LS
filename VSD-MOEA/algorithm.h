@@ -195,17 +195,19 @@ void MOEA::sophisticated_Local_Search(vector<CIndividual> child_pop)
 }
 void MOEA::improvement(vector<CIndividual> child_improved) //note: is a copy of child_pop
 {
-//   for(int i = 0 ; i < child_improved.size(); i++)
+   for(int i = 0 ; i < child_improved.size(); i++)
       {
 	int in =rand()%child_improved.size();
-	//LocalSearch1(child_improved[i]);	
-//	LocalSearch1(child_improved[in]);	
+	LocalSearch1(child_improved[i]);	
+////	LocalSearch1(child_improved[in]);	
 //	LocalSearch2(child_improved[in]);	
 	//LocalSearch2(child_improved[rand()%child_improved.size()]);	
-	LocalSearch3(child_improved[in]);	
+//	LocalSearch3(child_improved[i]);	
+	cout << "---------- "<< i <<endl;
 //	LocalSearch3(child_improved[rand()%child_improved.size()]);	
+//		break;
       }	
-	update_archive(archive, child_improved);
+//	update_archive(archive, child_improved);
       
 }
 
@@ -368,42 +370,49 @@ void MOEA::LocalSearch2(CIndividual &newindividual)
 }
 void MOEA::LocalSearch3(CIndividual &old_individual)
 {
-
+	cout << "LS3" <<endl;
   CIndividual Best = old_individual;
+  vector<CIndividual> track;
    bool LocalOptima = false;
 	int k = 0;
-   while( !LocalOptima && k <10)
+   while( !LocalOptima )//&& k <20)
    {
 	k++;
+	cout << k <<endl;
      vector<double> SearchU(nvar), SearchL(nvar), Disp(nvar);   
      LocalOptima = true;
      for(int i = 0; i < nvar; i++)
       {
 	SearchU[i] = vuppBound[i];
 	SearchL[i] = vlowBound[i];
-	Disp[i] = (SearchU[i] - SearchL[i])/10.0;
+	Disp[i] = (SearchU[i] - SearchL[i])/100.0;
       }
 	vector<int> order(nvar);
 	for(int i = 0; i < order.size(); i++) order[i] = i;
         next_permutation(order.begin(), order.end());
       double maxDisp = DBL_MAX;
-      while(maxDisp > 1e-3)
+      while(maxDisp > 1e-300)
       {
 	maxDisp = -DBL_MAX;
 	
-	   //random_shuffle(order.begin(), order.end());for(int i = 0; i < nvar; i++) order[i] = i;
+//	   random_shuffle(order.begin(), order.end());for(int i = 0; i < nvar; i++) order[i] = i;
 	for(int l =0; l < nvar; l++)
 	{
 	   int i = order[l];
 	  //if(Disp[i] < 1e-3) continue;
-	//  if((SearchU[i]-SearchL[i]) < DBL_EPSILON) continue;
-	   for(double d = SearchL[i]+1e-5; d < SearchU[i]; d+=Disp[i])
+	  if(fabs(SearchU[i]-SearchL[i]) < DBL_EPSILON*100) continue;
+	   double ant = INFINITY;
+	   for(double d = SearchL[i]; d < SearchU[i]; d+=Disp[i])
 	   { 
+		   if( fabs(ant-d) < DBL_EPSILON) break;
+		   	ant = d;
+//		   if( fabs(Disp[i]) < DBL_EPSILON) break;
 	      CIndividual neighbour = Best;
 	      neighbour.x_var[i] = d;
 	      neighbour.x_var[i] = min(neighbour.x_var[i], vuppBound[i]);
 	      neighbour.x_var[i] = max(neighbour.x_var[i], vlowBound[i]);
 	      neighbour.obj_eval();
+	      track.push_back(neighbour);
 	      nfes++;
 	      if( neighbour < Best)
 	      //if( distance_improvement(neighbour.y_obj, Best.y_obj) - distance_improvement(Best.y_obj,neighbour.y_obj ) > 1e-3 )
@@ -416,16 +425,26 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
 		  Best = neighbour;
 		  LocalOptima = false;
 	      }
+
 	   }
 	   SearchU[i] = min(Best.x_var[i]+2.0*Disp[i], vuppBound[i]);
 	   SearchL[i] = max(Best.x_var[i]-2.0*Disp[i], vlowBound[i]);
 	   Disp[i] = (SearchU[i] - SearchL[i])/10.0;
-	   maxDisp = max(maxDisp, Disp[i]);
+	   maxDisp = max(maxDisp, (Disp[i])/(vuppBound[i] - vlowBound[i]));
 	}
       }    
       old_individual = Best;
     }
-
+   for(int i = track.size()-1; i >= 0; i--)
+   {
+	   if( Best < track[i])
+	   {
+		   iter_swap(track.begin()+i, track.end()-1);
+		   track.pop_back();
+	   }
+   }
+   cout << track.size() <<endl;
+   update_archive(archive, track);
 }
 void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &population, vector<CIndividual> &child_pop)
 {
@@ -499,9 +518,13 @@ void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &pop
 void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &population)
 {
 	vector<CIndividual> candidates;
+	int sizearchive = archive.size();
 	for(int i = 0; i < archive.size(); i++)
 	{
 	   candidates.push_back(archive[i]);
+	}
+	for(int i = 0; i < population.size(); i++)
+	{
 	   candidates.push_back(population[i]);
 	}
 	archive.clear();
@@ -541,7 +564,7 @@ void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &pop
 		min_improvement_dist[i] = min(min_improvement_dist[i], distance_improvement(archive[j].y_obj, candidates[i].y_obj));
 	   } 
 	}
-	while(archive.size() < population.size())
+	while(archive.size() < sizearchive)
 	{
 	   double maxd = -DBL_MAX;
 	   int maxi =-1;
@@ -606,7 +629,7 @@ void MOEA::update_population(vector<CIndividual*> &survivors, vector<CIndividual
 {
 	vector<CIndividual> pool;
    for(int i = 0; i < survivors.size(); i++) pool.push_back(*(survivors[i]));
-   for(int i = 0; i < population.size(); i++) population[i] = pool[i];
+   for(int i = 0; i < population.size(); i++){ population[i] = pool[i]; population[i].count_age++;}
 }
 void MOEA::update_domianted_information(vector<CIndividual*> &survivors, vector<CIndividual*> &candidates)
 {
@@ -777,6 +800,8 @@ void MOEA::recombination(vector<CIndividual> &child_pop)
        realmutation(child_pop[i+1]);
        child_pop[i].obj_eval();
        child_pop[i+1].obj_eval();
+       child_pop[i].count_age= 0;
+       child_pop[i+1].count_age = 0;
        update_ideal_vector(child_pop[i]);
        update_ideal_vector(child_pop[i+1]);
     }
@@ -909,9 +934,9 @@ void MOEA::exec_emo(int run)
 	    
 	    nfes2 = nfes;
 	   countnfes += (nfes2 - nfes1);
-	   if(  countnfes > 0.1*max_nfes  )
+//	   if(  countnfes > 0.001*max_nfes  )
 	    {	
-	      countnfes -= 0.1*max_nfes;
+	      countnfes -= 0.001*max_nfes;
               save_front(filename2); //save the objective space information
 	      save_pos(filename1); //save the decision variable space information
 	      cout << "nfes... "<< nfes <<endl;
@@ -927,6 +952,7 @@ void MOEA::save_front(char saveFilename[1024])
     std::fstream fout;
 	//fout.open(saveFilename,std::ios::out);
 	fout.open(saveFilename,fstream::app|fstream::out );
+	static int maxAge = -1000;
 	for(int n=0; n<pops; n++)
 	{
 		for(int k=0;k<nobj;k++)
@@ -935,8 +961,11 @@ void MOEA::save_front(char saveFilename[1024])
 			fout<<child_pop[n].y_obj[k]<<"  ";
 		for(int k=0;k<nobj;k++)
 			fout<<population[n].y_obj[k]<<"  ";
+			fout<<population[n].count_age<<"  ";
+		if( maxAge < population[n].count_age) maxAge = population[n].count_age;
 		fout<<"\n";
 	}
+	cout << maxAge<<endl;
 	fout.close();
 }
 
