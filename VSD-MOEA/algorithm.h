@@ -195,15 +195,19 @@ void MOEA::sophisticated_Local_Search(vector<CIndividual> child_pop)
 }
 void MOEA::improvement(vector<CIndividual> child_improved) //note: is a copy of child_pop
 {
+	int static i = 0;
+	LocalSearch3(child_improved[i%child_improved.size()]);	
+	i++;
+	return;
    for(int i = 0 ; i < child_improved.size(); i++)
       {
 	int in =rand()%child_improved.size();
-	LocalSearch1(child_improved[i]);	
+//	LocalSearch1(child_improved[i]);	
 ////	LocalSearch1(child_improved[in]);	
 //	LocalSearch2(child_improved[in]);	
 	//LocalSearch2(child_improved[rand()%child_improved.size()]);	
-//	LocalSearch3(child_improved[i]);	
-	cout << "---------- "<< i <<endl;
+	LocalSearch3(child_improved[i]);	
+//	cout << "---------- "<< i <<endl;
 //	LocalSearch3(child_improved[rand()%child_improved.size()]);	
 //		break;
       }	
@@ -226,7 +230,7 @@ void MOEA::LocalSearch1(CIndividual &newindividual)
 	  bool improve = false;
 	  bool LocalOptima = false;
 	int k=0;
-	while(!LocalOptima && k < 100)
+	while(!LocalOptima)
 	{
 	 k++;
 	  if(!improve)
@@ -370,7 +374,7 @@ void MOEA::LocalSearch2(CIndividual &newindividual)
 }
 void MOEA::LocalSearch3(CIndividual &old_individual)
 {
-	cout << "LS3" <<endl;
+	//cout << "LS3" <<endl;
   CIndividual Best = old_individual;
   vector<CIndividual> track;
    bool LocalOptima = false;
@@ -378,7 +382,7 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
    while( !LocalOptima )//&& k <20)
    {
 	k++;
-	cout << k <<endl;
+	//ncout << k <<endl;
      vector<double> SearchU(nvar), SearchL(nvar), Disp(nvar);   
      LocalOptima = true;
      for(int i = 0; i < nvar; i++)
@@ -429,12 +433,15 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
 	   }
 	   SearchU[i] = min(Best.x_var[i]+2.0*Disp[i], vuppBound[i]);
 	   SearchL[i] = max(Best.x_var[i]-2.0*Disp[i], vlowBound[i]);
-	   Disp[i] = (SearchU[i] - SearchL[i])/10.0;
+	   Disp[i] = (SearchU[i] - SearchL[i])/100.0;
 	   maxDisp = max(maxDisp, (Disp[i])/(vuppBound[i] - vlowBound[i]));
+	   break;
 	}
       }    
+      break;
       old_individual = Best;
     }
+   	cout << track.size() <<endl;
    for(int i = track.size()-1; i >= 0; i--)
    {
 	   if( Best < track[i])
@@ -443,7 +450,7 @@ void MOEA::LocalSearch3(CIndividual &old_individual)
 		   track.pop_back();
 	   }
    }
-   cout << track.size() <<endl;
+   //cout << track.size() <<endl;
    update_archive(archive, track);
 }
 void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &population, vector<CIndividual> &child_pop)
@@ -468,15 +475,15 @@ void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &pop
 			// if(candidates[i]->times_dominated != 0) continue; //just consider the first front
 		 	  if(selected[i])continue;
 		        double s = 0.0;	
-		        double maxv = -INFINITY;
-		        for(int k = 0; k < nobj; k++)
-		        {
-		      	   double fi = fabs(candidates[i].y_obj[k]);
-		      	   s += fi;
-		      	   double ti = (k==m)?fi:1e5*fi;
-			    if(ti > maxv)   maxv=ti;
-		        }
-		         maxv = maxv + 0.0001*s;
+		        double maxv = candidates[i].y_obj[m];//-INFINITY;
+//		        for(int k = 0; k < nobj; k++)
+//		        {
+//		      	   double fi = fabs(candidates[i].y_obj[k]);
+//		      	   s += fi;
+//		      	   double ti = (k==m)?fi:1e5*fi;
+//			    if(ti > maxv)   maxv=ti;
+//		        }
+//		         maxv = maxv + 0.0001*s;
 		        if(bestvector > maxv)
 		        { indxmaxim = i; bestvector = maxv;}
 		  }
@@ -540,15 +547,15 @@ void MOEA::update_archive(vector<CIndividual> &archive, vector<CIndividual> &pop
 			// if(candidates[i]->times_dominated != 0) continue; //just consider the first front
 		 	  if(selected[i])continue;
 		        double s = 0.0;	
-		        double maxv = -INFINITY;
-		        for(int k = 0; k < nobj; k++)
-		        {
-		      	   double fi = fabs(candidates[i].y_obj[k]);
-		      	   s += fi;
-		      	   double ti = (k==m)?fi:1e5*fi;
-			    if(ti > maxv)   maxv=ti;
-		        }
-		         maxv = maxv + 0.0001*s;
+		        double maxv = candidates[i].y_obj[m];//-INFINITY;
+		      //  for(int k = 0; k < nobj; k++)
+		      //  {
+		      //	   double fi = fabs(candidates[i].y_obj[k]);
+		      //	   s += fi;
+		      //	   double ti = (k==m)?fi:1e5*fi;
+		      //      if(ti > maxv)   maxv=ti;
+		      //  }
+		      //   maxv = maxv + 0.0001*s;
 		        if(bestvector > maxv)
 		        { indxmaxim = i; bestvector = maxv;}
 		  }
@@ -736,15 +743,15 @@ void MOEA::select_first_survivors(vector<CIndividual*> &survivors, vector<CIndiv
 		 {	
 			// if(candidates[i]->times_dominated != 0) continue; //just consider the first front
 		        double s = 0.0;	
-		        double maxv = -DBL_MAX;
-		        for(int k = 0; k < nobj; k++)
-		        {
-		      	   double fi = fabs(candidates[i]->y_obj[k]);
-		      	   s += fi;
-		      	   double ti = (k==m)?fi:1e5*fi;
-		            if(ti > maxv)   maxv=ti;
-		        }
-		         maxv = maxv + 0.0001*s;
+		        double maxv =candidates[i]->y_obj[m];//  -DBL_MAX;
+		       // for(int k = 0; k < nobj; k++)
+		       // {
+		       //    double fi = fabs(candidates[i]->y_obj[k]);
+		       //    s += fi;
+		       //    double ti = (k==m)?fi:1e5*fi;
+		       //     if(ti > maxv)   maxv=ti;
+		       // }
+		         //maxv = maxv + 0.0001*s;
 		        if(bestvector > maxv)
 		        { indxmaxim = i; bestvector = maxv;}
 		  }
