@@ -50,6 +50,7 @@ public:
 	void update_archive(vector<CIndividual> &archive, vector<CIndividual> &population, vector<CIndividual> &child_pop);
 	void sophisticated_Local_Search(vector<CIndividual> child_pop);
 	void LocalSearch1(CIndividual &old_individual);
+	double mts1_dim(vector<double> &SR, CIndividual &current, int d, CIndividual &bestind);
 	void LocalSearch2(CIndividual &old_individual);
 	void LocalSearch3(CIndividual &old_individual);
 	void improvement(vector<CIndividual> old_individuals);
@@ -99,7 +100,7 @@ double MOEA::distance_improvement( vector<double> &a, vector<double> &b)
 	   dist += factor*factor;
 	   maxd = max(maxd, max( b[i]-a[i], 0.0));
 	}
-        if(dist == 0.0) return -maxd; //in case that this indicator is zero, this mean that it is a dominated individual...
+//        if(dist == 0.0) return -maxd; //in case that this indicator is zero, this mean that it is a dominated individual...
    return dist;
    return sqrt(dist);
 }
@@ -195,102 +196,116 @@ void MOEA::sophisticated_Local_Search(vector<CIndividual> child_pop)
 }
 void MOEA::improvement(vector<CIndividual> child_improved) //note: is a copy of child_pop
 {
-	int static i = 0;
-	LocalSearch3(child_improved[i%child_improved.size()]);	
-	i++;
-	return;
+//	int static i = 0;
+//	LocalSearch3(child_improved[i%child_improved.size()]);	
+//	i++;
+//	return;
    for(int i = 0 ; i < child_improved.size(); i++)
       {
-	int in =rand()%child_improved.size();
-//	LocalSearch1(child_improved[i]);	
+	//int in =rand()%child_improved.size();
+	LocalSearch1(child_improved[i]);	
 ////	LocalSearch1(child_improved[in]);	
 //	LocalSearch2(child_improved[in]);	
 	//LocalSearch2(child_improved[rand()%child_improved.size()]);	
-	LocalSearch3(child_improved[i]);	
+//	LocalSearch3(child_improved[i]);	
 //	cout << "---------- "<< i <<endl;
 //	LocalSearch3(child_improved[rand()%child_improved.size()]);	
 //		break;
       }	
-//	update_archive(archive, child_improved);
+	update_archive(archive, child_improved);
       
 }
-
-void MOEA::LocalSearch1(CIndividual &newindividual)
+double MOEA::mts1_dim(vector<double> &SR, CIndividual &current, int d, CIndividual &bestind)
 {
-	CIndividual old_individual;
-	vector<double> SearchRange(nvar);
+  double improvement_distance = 0.0;
+  bestind.x_var[d] -= SR[d];
+  bestind.x_var[d] = max(bestind.x_var[d],  vlowBound[d]);
+  bestind.x_var[d] = min(bestind.x_var[d],  vuppBound[d]);
+  bestind.obj_eval();
+  nfes++;
+    double score = distance_improvement(bestind.y_obj, current.y_obj)  - distance_improvement(current.y_obj, bestind.y_obj);
+
+  if( score > 0.0 ) //checking improvement distance....
+    {
+       bestind = current;
+       improvement_distance = score; 
+    }
+    else if( score < 0.0 )
+    {
+	 bestind.x_var[d] += 0.5*SR[d];
+  	 bestind.x_var[d] = max(bestind.x_var[d],  vlowBound[d]);
+  	 bestind.x_var[d] = min(bestind.x_var[d],  vuppBound[d]);
+  	 bestind.obj_eval();
+    	 score = distance_improvement(bestind.y_obj, current.y_obj)  - distance_improvement(current.y_obj, bestind.y_obj);
+	 if( score > 0.0 ) //checking improvement distance....
+         {
+            bestind = current;
+            improvement_distance = score; 
+         }
+	 nfes++;
+    }else ///////////////////////////////////////////////// updating non-dominated....
+	{
+	}
+   return improvement_distance;
+}
+void MOEA::LocalSearch1(CIndividual &current)
+{
+	CIndividual current_best = current;
+	vector<double> SearchRange(nvar), improvement(nvar, 0.0);
 	vector<int> Direction(nvar), order(nvar);
 	for(int i = 0; i < nvar; i++)
 	{
-	   SearchRange[i] = (vuppBound[i]-vlowBound[i])/2.0;
+	   SearchRange[i] = (vuppBound[i]-vlowBound[i])*0.4;
 	   order[i] = i;
 	}
-
-	   next_permutation(order.begin(), order.end());
-	  bool improve = false;
-	  bool LocalOptima = false;
-	int k=0;
-	while(!LocalOptima)
+	next_permutation(order.begin(), order.end());
+	double bestperformance = 0.0;
+  	//warm up...
+ 	for(int d = 0 ;d < nvar; d++)
 	{
-	 k++;
-	  if(!improve)
-	  {
-	   bool expand = true;
-	   for(int i = 0; i < nvar; i++)  //check all variables..
-	   {
-		Direction[i] = (rnd_uni(&rnd_uni_init) < 0.5)?-1:1; //similar than a bernulli distrbutions, which is dedicated for the direcction..
-		SearchRange[i] *=0.5;
-	      if(SearchRange[i] > 1e-8) //expand again if all search range variables are lower than 1e-8, note that some variables could be zero and could be keep in this way..
-	      {
-		  expand = false;
-	      }
-	   }
-	   if( expand )
-	   {
-	      LocalOptima = true;
-	      for(int i = 0; i < nvar; i++)  
-	      {
-	            SearchRange[i] = (vuppBound[i]-vlowBound[i])*0.4;
-	      }
-	   }
-	  }
-	  improve = false;
-	   //next_permutation(order.begin(), order.end());
-	   //random_shuffle(order.begin(), order.end());
-	   for(int d = 0; d < nvar; d++)
-	   {
-		int i = order[d];
-		old_individual = newindividual;
-		newindividual.x_var[i] = old_individual.x_var[i] + SearchRange[i]*Direction[i];
-		newindividual.x_var[i] = max(vlowBound[i], newindividual.x_var[i]);
-		newindividual.x_var[i] = min(vuppBound[i], newindividual.x_var[i]);
-	        newindividual.obj_eval();
-	        nfes++;
-		if(newindividual < old_individual)
-		{
-		  improve=true;
-		  LocalOptima = false;
-		}
-	        else if( old_individual < newindividual) //weakly dominance
-	        {
-		   newindividual = old_individual;
-	           newindividual.x_var[i] = old_individual.x_var[i] - 0.5*SearchRange[i]*Direction[i];
-	           newindividual.x_var[i] = max(vlowBound[i], newindividual.x_var[i]);
-	           newindividual.x_var[i] = min(vuppBound[i], newindividual.x_var[i]);
-	           newindividual.obj_eval();
-	           nfes++;
-		   if(newindividual < old_individual)
-		   {
-		     improve=true;
-		     LocalOptima = false;
-		   }
-	           else if( old_individual < newindividual)
-	           {
-	             newindividual = old_individual;
-	           }
-	         }
-	     }
+	    CIndividual current_improved = current;
+	    double performance = mts1_dim(SearchRange, current, order[d], current_improved); 	
+	    improvement[order[d]] = performance;//max(performance - bestperformance  , 0.0);
+	    if( improvement[order[d]] > bestperformance  )
+	    {
+		current_best = current_improved;
+		bestperformance = performance;
+	    }
+	    else SearchRange[order[d]] *= 0.5;
 	}
+	//sorting variables by improvement...
+	iota(order.begin(), order.end(), 0);
+	sort(order.begin(), order.end(), [&](unsigned i1, unsigned i2){return improvement[i1] > improvement[i2];});
+	////looking forward....
+	int i, d=0, next_d, next_i, cont=0, maxite= 1000;
+	while( cont++ < maxite )
+	{
+	    i = order[d];
+	    CIndividual current_improved = current_best;
+	    double performance = mts1_dim(SearchRange, current_best, i, current_improved);
+	    improvement[i] = max(performance - bestperformance  , 0.0);
+	    next_d = (d+1)%nvar;
+	    next_i = order[next_d];
+	   if(improvement[i] > 0.0)
+	   {
+		bestperformance = performance;
+		current_best = current_improved;
+	       if( improvement[i] < improvement[next_i] )
+	       {
+	           iota(order.begin(), order.end(), 0); 
+	           sort(order.begin(), order.end(), [&](unsigned i1, unsigned i2){return improvement[i1] > improvement[i2];});
+	       }
+	   }else
+	    {
+		   SearchRange[i] /=2.0;
+		   d = next_d;
+		   if(SearchRange[i] < 1e-15)
+		   {
+	   	       SearchRange[i] = (vuppBound[i]-vlowBound[i])*0.4;
+		   }
+	    }
+	}
+	current = current_best;
 }
 void MOEA::LocalSearch2(CIndividual &newindividual)
 {
