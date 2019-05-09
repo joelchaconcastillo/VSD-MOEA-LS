@@ -14,32 +14,33 @@ my $Sed=0;
 
 ####Realizar la búsqueda del parámetro D inicial que proporcione mejores resultados
 my @Conf =(
-"UF1 2",
-"UF4 2",
-"UF5 2",
-"UF10 3",
-"UF9 3",
-"UF8 3",
-"DTLZ4 2",
-"DTLZ4 3",
-);
-
-
-
-
-###foreach(@DI)
-##{
-##	foreach(@Conf)
-##	{
-##		for($Sed = 1; $Sed <=35; $Sed++) ##Realizar 35 ejecuciones con distintas semilla de cada instancia..
-##		{
-##			print $fout "~$PathAlgorithm/Ejecutable $_ $Sed \n";
-##		}
-##	}
-##	
-##}
+"UF1 2");
+#"UF2 2",
+#"UF3 2",
+#"UF4 2",
+#"UF5 2",
+#"UF6 2",
+#"UF7 2",
+#"UF8 3",
+#"UF9 3",
+#"UF10 3",
+#"DTLZ1 2",
+#"DTLZ2 2",
+#"DTLZ3 2",
+#"DTLZ4 2",
+#"DTLZ5 2",
+#"DTLZ6 2",
+#"DTLZ7 2",
+#"DTLZ1 3",
+#"DTLZ2 3",
+#"DTLZ3 3",
+#"DTLZ4 3");
+#"DTLZ5 3",
+#"DTLZ6 3",
+#"DTLZ7 3");
 
 my @Variables= ("50","100","250", "500", "1000");
+#my @Variables= ("50","100");
 
 foreach my $v (@Variables)
 {
@@ -48,15 +49,48 @@ foreach my $v (@Variables)
                 for(my $Sed = 1; $Sed <=35; $Sed++) ##Realizar 35 ejecuciones con distintas semilla de cada instancia..
                 {
 
-#			 my @configuration2 = split ' ', $line;#~ s/ /_/g; 
-#                        my $inst = $configuration2[0];
-#                        my $nvar = $configuration2[1];
-#                        my $nobj = $configuration2[2];
-#                        print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes ".($nfes*25000)." --nvar $nvar --Instance $inst --Path $PathAlgorithm --Dist_factor 0.4 --nobj $nobj --Seed $Seed --param_l 20 --param_k 4 \n";
+		       my @configuration2 = split ' ', $configuration;#~ s/ /_/g; 
+                       my $inst = $configuration2[0];
+                       my $nobj = $configuration2[1];
+		       print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes 25000000 --Instance $inst --nvar $v --nobj $nobj --Seed $Sed --Path $PathAlgorithm --Dist_factor 0.4 \n";
+                }
+        }
 
-                      my @configuration2 = split ' ', $configuration;#~ s/ /_/g; 
+}
+#########################WFG#
+@Conf =(
+#"WFG1 2",
+#"WFG2 2",
+#"WFG3 2",
+#"WFG4 2",
+#"WFG5 2",
+#"WFG6 2",
+#"WFG7 2",
+#"WFG8 2",
+"WFG9 2");#,
+#"WFG1 3",
+#"WFG2 3",
+#"WFG3 3",
+#"WFG4 3",
+#"WFG5 3",
+#"WFG6 3",
+#"WFG7 3",
+#"WFG8 3",
+#"WFG9 3");
 
-		     print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes 25000000 --Instance $configuration2[0] --nvar $v --nobj $configuration2[1] --Seed $Sed --Path $PathAlgorithm --Dist_factor 0.4 \n";
+foreach my $v (@Variables)
+{
+        foreach my $configuration (@Conf)
+        {
+                for(my $Sed = 1; $Sed <=35; $Sed++) ##Realizar 35 ejecuciones con distintas semilla de cada instancia..
+                {
+
+		      my @configuration2 = split ' ', $configuration;#~ s/ /_/g; 
+                      my $inst = $configuration2[0];
+                      my $nobj = $configuration2[1];
+		      my $k = int((20.0/24.0)*$v);
+		      my $l = $v-$k; 
+		     print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes 2500000 --Instance $inst --nvar $v --nobj $nobj --Seed $Sed --Path $PathAlgorithm --Dist_factor 0.4 --param_l $l --param_k $k \n";
                 }
         }
 

@@ -5,7 +5,6 @@
 // ===========================================================================*/
 
 
-
 #include "algorithm.h"
 //#include <omp.h>
 
@@ -111,6 +110,7 @@ void SetConfiguration(int argc, char*argv[])
 	    }
 	if( realm == -1) realm = 1.0/nvar;
 	Initial_lowest_distance_factor *=sqrt(nvar);
+	//Initial_lowest_distance_factor *=sqrt(1.0);
 }
 int main(int argc, char *argv[])
 {

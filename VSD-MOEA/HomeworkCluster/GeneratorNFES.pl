@@ -68,7 +68,22 @@ for(my $nfes=1; $nfes<=10; $nfes++)
                         my $inst = $configuration2[0];	
                         my $nvar = $configuration2[1];	
                         my $nobj = $configuration2[2];	
-			print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes ".($nfes*25000)." --nvar $nvar --Instance $inst --Path $PathAlgorithm --Dist_factor 0.4 --nobj $nobj --Seed $Seed --param_l 20 --param_k 4 \n";
+			print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes ".($nfes*250000)." --nvar $nvar --Instance $inst --Path $PathAlgorithm --Dist_factor 0.4 --nobj $nobj --Seed $Seed --param_l 20 --param_k 4 \n";
+		}
+	}
+}
+
+for(my $nfes=1; $nfes<=10; $nfes++)
+{
+	foreach my $line (@Conf)
+	{
+		for(my $Seed = 1; $Seed <=35; $Seed++) ##Realizar 35 ejecuciones con distintas semilla de cada instancia..
+		{
+		        my @configuration2 = split ' ', $line;#~ s/ /_/g; 
+                        my $inst = $configuration2[0];	
+                        my $nvar = $configuration2[1];	
+                        my $nobj = $configuration2[2];	
+			print $fout "~$PathAlgorithm/Ejecutable --n 100 --nfes ".($nfes*2500000)." --nvar $nvar --Instance $inst --Path $PathAlgorithm --Dist_factor 0.4 --nobj $nobj --Seed $Seed --param_l 20 --param_k 4 \n";
 		}
 	}
 }

@@ -62,7 +62,7 @@ void real_sbx_xoverA(CIndividual &parent1, CIndividual &parent2, CIndividual &ch
         {
             if (rnd_uni(&rnd_uni_init)<=0.5 )
             {
-                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS)
+                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS2)
                 {
                     if (parent1.x_var[i] < parent2.x_var[i])
                     {
@@ -155,7 +155,7 @@ void real_sbx_xoverB (CIndividual &parent1, CIndividual &parent2, CIndividual &c
         {
             if (rnd_uni(&rnd_uni_init) <= 0.5 )
             {
-                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS)
+                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS2)
                 {
                     if (parent1.x_var[i] < parent2.x_var[i])
                     {
@@ -248,7 +248,7 @@ void real_sbx_hybrid(CIndividual &parent1, CIndividual &parent2, CIndividual &ch
         {
             if (rnd_uni(&rnd_uni_init)<= prob_var )
             {
-                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS)
+                if (fabs(parent1.x_var[i]-parent2.x_var[i]) > EPS2)
                 {
                     if (parent1.x_var[i] < parent2.x_var[i])
                     {
@@ -466,7 +466,7 @@ void HBX(CIndividual &ind0, CIndividual &ind1, CIndividual &ind2, CIndividual &c
 				//Generate u_i
 				if (rnd_uni(&rnd_uni_init)<=0.5 )
 				    {
-					if (fabs(ind0.x_var[n]-ind1.x_var[n]) > EPS)
+					if (fabs(ind0.x_var[n]-ind1.x_var[n]) > EPS2)
 					{
 					    if (ind0.x_var[n] < ind1.x_var[n])
 					    {

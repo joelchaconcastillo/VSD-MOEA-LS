@@ -42,11 +42,11 @@ double Initial_lowest_distance_factor=0.2*sqrt(nvar), lowestDistanceFactor;
 //------------- Parameters in VSD-MOEA
 double          scale[200];  
 
-int		etax    = 20, 	etam    = 50;   // distribution indexes of crossover and mutation
+int		etax    = 2, 	etam    = 50;   // distribution indexes of crossover and mutation
 
 double  realx=0.9,  realm = -1.0;    // crossover, mutation, selection probabilities
 int run;
-
+double EPS2=EPS;
 
 
 #endif
