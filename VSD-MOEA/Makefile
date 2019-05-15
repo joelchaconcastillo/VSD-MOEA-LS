@@ -6,7 +6,7 @@ RM=rm -f
 CFLAGS=-Wno-unused-result -std=c++11 -fopenmp
 LDFLAGS=
 UBUNTUFLAGS=-lm $(LDFLAGS) -lstdc++ -std=c++11 -fopenmp
-OPENSUSEFLAGS=-lm $(LDFLAGS)
+OPENSUSEFLAGS=-lm $(LDFLAGS) -std=c++11
 DEBUG=-O2
 OBJS:=moea.o RealLife-MOPs.o cec09.o
 MAIN=Ejecutable
